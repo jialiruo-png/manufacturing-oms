@@ -7,6 +7,7 @@ export type ErrorCode =
   | 'PAYLOAD_TOO_LARGE'
   | 'VALIDATION_ERROR'
   | 'PASSWORD_CHANGE_REQUIRED'
+  | 'DEMO_READ_ONLY'
   | 'INTERNAL_ERROR';
 
 export class HttpError extends Error {

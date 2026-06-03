@@ -121,6 +121,7 @@ export function defaultModuleForUser(user: User): MobileModule {
 export function toMobileModule(role: AccountRole): MobileModule {
   if (role === 'purchase') return 'procurement';
   if (role === 'manager' || role === 'admin') return 'gm';
+  if (role === 'demo') return 'dashboard';
   return role;
 }
 
