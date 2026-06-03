@@ -123,7 +123,7 @@ function getPersistentHashTab() {
   return isPersistentTab(tab) ? tab : null;
 }
 
-function tabsForUser(user: User) {
+function tabsForUser(user: User, isDemoView = false) {
   if (user.isAdmin) return [...ADMIN_TABS, 'user-review' as const];
   if (user.isClerk) return [...ADMIN_TABS];
   const tabs: Array<Role | 'user-review'> = [];
@@ -136,12 +136,14 @@ function tabsForUser(user: User) {
   if (canApproveOrder(user) || canManageUsers(user)) tabs.push('dashboard');
   if (canApproveOrder(user)) tabs.push('gm');
   if (canManageUsers(user)) tabs.push('user-review');
-  return [...new Set(tabs)];
+  const result = [...new Set(tabs)];
+  if (isDemoView && !result.includes('dashboard')) result.unshift('dashboard');
+  return result;
 }
 
-function canAccessTab(user: User, tab: ActiveTab) {
+function canAccessTab(user: User, tab: ActiveTab, isDemoView = false) {
   if (tab === 'workbench') return true;
-  return tabsForUser(user).includes(tab);
+  return tabsForUser(user, isDemoView).includes(tab);
 }
 
 function initialUser() {
@@ -262,9 +264,10 @@ export default function App() {
     // For demo accounts, start in 业务员 view; we'll synthesize the effective user
     // from `demoViewedRole` for all downstream permission/tab checks.
     const initialViewedRole: AccountRole = 'sales';
-    const probeUser = user.role === 'demo' ? withDemoView(user, initialViewedRole) : user;
+    const isDemo = user.role === 'demo';
+    const probeUser = isDemo ? withDemoView(user, initialViewedRole) : user;
     const defaultTab = defaultTabForUser(probeUser);
-    const nextTab = canAccessTab(probeUser, defaultTab) ? defaultTab : tabsForUser(probeUser)[0];
+    const nextTab = canAccessTab(probeUser, defaultTab, isDemo) ? defaultTab : tabsForUser(probeUser, isDemo)[0];
     clearApiCache();
     saveAuthState(auth);
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, nextTab);
@@ -360,7 +363,7 @@ export default function App() {
       setMountedTabs([]);
       return;
     }
-    if (!canAccessTab(effectiveLoggedInUser, activeTab)) return;
+    if (!canAccessTab(effectiveLoggedInUser, activeTab, loggedInUser?.role === 'demo')) return;
     setMountedTabs((prev) => prev.includes(activeTab) ? prev : [...prev, activeTab]);
   }, [activeTab, loggedInUser?.id, loggedInUser?.mustChangePassword, demoViewedRole]);
 
@@ -381,7 +384,7 @@ export default function App() {
     const handleHashChange = () => {
       const next = getPersistentHashTab();
       if (!next) return;
-      if (effectiveLoggedInUser && !canAccessTab(effectiveLoggedInUser, next)) return;
+      if (effectiveLoggedInUser && !canAccessTab(effectiveLoggedInUser, next, loggedInUser?.role === 'demo')) return;
       setActiveTab(next);
       localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, next);
     };
@@ -392,7 +395,8 @@ export default function App() {
   useEffect(() => {
     if (!effectiveLoggedInUser) return;
     if (activeTab === 'workbench') return;
-    const next = canAccessTab(effectiveLoggedInUser, activeTab) ? activeTab : tabsForUser(effectiveLoggedInUser)[0];
+    const isDemo = loggedInUser?.role === 'demo';
+    const next = canAccessTab(effectiveLoggedInUser, activeTab, isDemo) ? activeTab : tabsForUser(effectiveLoggedInUser, isDemo)[0];
     if (next !== activeTab) {
       setActiveTab(next);
       return;
@@ -406,12 +410,14 @@ export default function App() {
   const demoMode = isDemoUser(loggedInUser);
   const effectiveUser: User = effectiveLoggedInUser;
   const loggedInRole = toAppRole(effectiveUser.role);
-  const visibleRoleTabs = tabsForUser(effectiveUser).filter((tab): tab is Role => tab !== 'user-review');
+  const visibleRoleTabs = tabsForUser(effectiveUser, demoMode).filter((tab): tab is Role => tab !== 'user-review');
   const visibleTabs = ALL_TABS.filter((t) => visibleRoleTabs.includes(t.key));
   const canReviewUsers = canManageUsers(effectiveUser);
+  // Demo accounts intentionally see all write entry points (新建订单、新增客户 等) so they
+  // experience the full UI; the backend rejects every non-GET request with 403 DEMO_READ_ONLY,
+  // so attempts to actually submit surface the existing error toast.
   const salesReadOnly =
-    demoMode
-    || effectiveUser.role === 'purchase'
+    effectiveUser.role === 'purchase'
     || ((canApproveOrder(effectiveUser) || canManageUsers(effectiveUser)) && !canCreateOrder(effectiveUser) && !effectiveUser.isAdmin);
   const currentProfile: HeaderProfile = {
     name: loggedInUser.name,
