@@ -1,0 +1,2394 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────
+ * Win/Mac UI 一致性：以 Mac 为基准，Win 看齐
+ *
+ * 关键 trick：@font-face 名字与 Mac 系统字体同名 + 用 local() 兜底，
+ * Mac 浏览器命中 local() 后**完全不下载** url() 资源（Mac 端零变化）；
+ * Win 浏览器找不到 local()，自动落到 url() 指向的 Web Font。
+ *
+ * 字体来源：bash frontend/scripts/download-fonts.sh
+ * 字体许可：SIL OFL 1.1 / Apache 2.0，全部可商用。
+ * ───────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'PingFang SC';
+  src: local('PingFang SC'),
+       local('PingFangSC-Regular'),
+       url('/fonts/NotoSansSC-400.woff2') format('woff2');
+  font-weight: 100 449;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PingFang SC';
+  src: local('PingFang SC Medium'),
+       local('PingFangSC-Medium'),
+       url('/fonts/NotoSansSC-500.woff2') format('woff2');
+  font-weight: 450 580;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'PingFang SC';
+  src: local('PingFang SC Semibold'),
+       local('PingFangSC-Semibold'),
+       url('/fonts/NotoSansSC-700.woff2') format('woff2');
+  font-weight: 581 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: '-apple-system-fallback';
+  src: local('-apple-system'),
+       local('BlinkMacSystemFont'),
+       local('SF Pro Text'),
+       url('/fonts/Inter-var.woff2') format('woff2-variations'),
+       url('/fonts/Inter-var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Rounded';
+  src: local('SF Pro Rounded'),
+       local('-apple-system-rounded'),
+       url('/fonts/Nunito-var.woff2') format('woff2-variations'),
+       url('/fonts/Nunito-var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ui-rounded';
+  src: local('ui-rounded'),
+       local('SF Pro Rounded'),
+       url('/fonts/Nunito-var.woff2') format('woff2-variations'),
+       url('/fonts/Nunito-var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Mono';
+  src: local('SF Mono'),
+       local('SFMono-Regular'),
+       local('Menlo'),
+       url('/fonts/JetBrainsMono-var.woff2') format('woff2-variations'),
+       url('/fonts/JetBrainsMono-var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ui-monospace';
+  src: local('ui-monospace'),
+       local('SF Mono'),
+       local('Menlo'),
+       url('/fonts/JetBrainsMono-var.woff2') format('woff2-variations'),
+       url('/fonts/JetBrainsMono-var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* CSS 变量：所有需要"系统字体"的地方统一用 var(--ymt-font-sans)。
+ * 顺序说明（PingFang SC 上移到 Microsoft YaHei 之前，是为了让 Win 上
+ * 走 @font-face 的 NotoSansSC，而不是 Win 内置的微软雅黑）。
+ * Mac 上不受影响：PingFang SC 仍是 Mac 系统字体首选匹配中文字符。 */
+:root {
+  --ymt-font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC',
+    sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+  --ymt-font-mono:
+    'SF Mono', 'ui-monospace', Menlo, Consolas,
+    'Liberation Mono', 'Microsoft YaHei', monospace;
+  --ymt-font-rounded:
+    'SF Pro Rounded', 'ui-rounded', system-ui,
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* Hide scrollbar but keep scrollable */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 全站滚动条统一为 8px 细条（Win 默认 15px 会挤压表格列宽，做细可释放 ~7px 空间）。
+ * Mac 上滚动条是 overlay 不占位，本规则不影响 Mac 视觉。 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@layer base {
+  body {
+    font-family: var(--ymt-font-sans);
+    background-color: rgb(247, 247, 247);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Win 端专属兜底（@supports not 在 Mac Safari/Chrome 上不触发，仅 Win 命中）。
+ * 用于解决 Win Chrome 中文最小字号 12px 强制放大、以及个别 9-10px 字号过小的问题。
+ * 另：DirectWrite 抗锯齿 + 思源黑体笔画偏细导致正文看起来"灰"，Win 端把表格主文字
+ * 颜色从 #1a1d23 加深到 #0f1318，弥补抗锯齿造成的视觉浅化（Mac 端不受影响）。 */
+@supports not (font: -apple-system-body) {
+  .procurement-expand-arrow { font-size: 11px; }
+  .procurement-material-hint { font-size: 11px; line-height: 1.3; }
+  .sales-data-table .ant-table-tbody > tr > td,
+  .sales-management-panel .sales-data-table .ant-table-tbody > tr > td {
+    color: #0f1318;
+  }
+
+  /* Win 字重兜底：Segoe UI / Noto Sans SC 都没有 800/900 字形，浏览器只能伪粗体
+   * 合成，会产生模糊感。降到 700 命中真实 Bold 字形，文字立刻清晰。
+   * Mac 端不进入此分支，原 800/900 字形保留。 */
+  .app-brand,
+  .sales-page-head h1,
+  .sales-data-table .ant-table-thead > tr > th,
+  .sales-customer-name,
+  .procurement-order-title,
+  .procurement-strong-text,
+  .production-summary-chip strong {
+    font-weight: 700;
+  }
+
+  /* Win 表格主文字加重：原 400 字重在 Win 14px 中文上骨架偏细，看起来"浅"。
+   * 现已下载 NotoSansSC Medium (500) 文件，字重 500 命中真实中粗字形，
+   * 西文 Inter variable 也支持 500 → 整体笔画饱满度接近 Mac。 */
+  .sales-data-table .ant-table-tbody > tr > td,
+  .sales-management-panel .sales-data-table .ant-table-tbody > tr > td {
+    font-weight: 500;
+  }
+}
+
+/* 业务员字段视觉降权规则已下移到共享圆体规则之后（约 1148 行附近），
+ * 否则被后写的共享规则覆盖，weight 350 不会生效。 */
+
+.app-top-nav {
+  height: 64px;
+  padding: 0 28px;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid #e8edf5;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: saturate(140%) blur(12px);
+}
+
+.app-brand {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 148px;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.app-brand-red {
+  color: #c4000b;
+}
+
+.app-brand-dark {
+  color: #101827;
+}
+
+.app-nav-divider {
+  width: 1px;
+  height: 24px;
+  background: #e3e8f0;
+  flex-shrink: 0;
+}
+
+.app-nav-tabs {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-main-tabs .ant-tabs-nav::before {
+  border-bottom: 0;
+}
+
+.app-main-tabs .ant-tabs-tab {
+  height: 64px;
+  margin: 0 3px;
+  padding: 0 12px;
+  color: #5b6472;
+  font-size: 15px;
+  font-weight: 650;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.app-main-tabs .ant-tabs-tab:hover {
+  color: #111827;
+}
+
+.app-main-tabs .ant-tabs-tab-active {
+  color: #101827;
+}
+
+.app-main-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #101827 !important;
+}
+
+.app-main-tabs .ant-tabs-ink-bar {
+  display: none !important;
+}
+
+.app-nav-tab-label {
+  height: 34px;
+  padding: 0 2px;
+  border-radius: 8px;
+}
+
+.app-nav-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  color: #8a94a6;
+  font-size: 16px;
+}
+
+.app-main-tabs .ant-tabs-tab-active .app-nav-tab-icon {
+  color: #c4000b;
+}
+
+.app-main-tabs .ant-badge-count {
+  background: #ef4444;
+  box-shadow: 0 0 0 2px #fff;
+  font-weight: 700;
+}
+
+.app-nav-actions {
+  flex-shrink: 0;
+  height: 64px;
+}
+
+.app-refresh-button {
+  width: 34px;
+  height: 34px;
+  color: #101827;
+}
+
+.app-profile-trigger {
+  min-height: 44px;
+  padding: 5px 8px 5px 6px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.app-profile-trigger:hover {
+  background: #f5f7fb;
+}
+
+.app-profile-avatar {
+  background: #eef2f7;
+  color: #6b7280;
+}
+
+.app-profile-name {
+  display: block;
+  color: #101827;
+  font-size: 14px;
+}
+
+.app-profile-role {
+  margin-top: 3px;
+  color: #8a94a6;
+  font-size: 12px;
+}
+
+/* Order card left border accents */
+.order-card-red    { border-left: 4px solid #ef4444 !important; }
+.order-card-blue   { border-left: 4px solid #3b82f6 !important; }
+.order-card-green  { border-left: 4px solid #22c55e !important; }
+.order-card-amber  { border-left: 4px solid #f59e0b !important; }
+.order-card-orange { border-left: 4px solid #f97316 !important; }
+
+/* ── Feature Banner（新功能横条 · 浅米黄便签风 · 与主卡同宽收窄高度） ── */
+.feature-banner-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.feature-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 12px 0 18px;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
+  background: #FEFCE8;
+  color: #713F12;
+  font-size: 12.5px;
+  line-height: 1;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(202, 138, 4, 0.04);
+}
+
+.feature-banner-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #EAB308;
+  border-radius: 10px 0 0 10px;
+}
+
+.feature-banner-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: #A16207;
+  font-size: 13px;
+}
+
+.feature-banner-badge {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #FEF3C7;
+  color: #854D0E;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.feature-banner-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.feature-banner-title {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: #713F12;
+  white-space: nowrap;
+}
+
+.feature-banner-sep {
+  flex-shrink: 0;
+  color: #CA8A04;
+  opacity: 0.5;
+}
+
+.feature-banner-desc {
+  flex: 1;
+  min-width: 0;
+  color: #854D0E;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feature-banner-close {
+  appearance: none;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #A16207;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.feature-banner-close:hover {
+  background: #FEF3C7;
+  color: #713F12;
+}
+
+/* 窄屏：标题在前，描述被截断为省略号，hover 时通过原生 title 提示完整内容 */
+@media (max-width: 900px) {
+  .feature-banner-badge { display: none; }
+}
+
+/* ── 更新日志 Drawer 内的 feature 卡片 ─────────────────────────────────── */
+.changelog-drawer .changelog-entry {
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  border: 1px solid #F1F5F9;
+  border-radius: 8px;
+  background: #FFFFFF;
+}
+
+.changelog-drawer .changelog-entry-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.changelog-drawer .changelog-version {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #FEF9C3;
+  color: #854D0E;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.changelog-drawer .changelog-date {
+  color: #94A3B8;
+  font-size: 12px;
+}
+
+.changelog-drawer .changelog-title {
+  font-weight: 700;
+  color: #0F172A;
+  font-size: 14px;
+  margin: 4px 0;
+}
+
+.changelog-drawer .changelog-desc {
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sales-management-panel {
+  font-size: 14px;
+  color: #202226;
+}
+
+.sales-shell-card {
+  overflow: hidden;
+  /* 边框从 #edf0f4 (亮度 96%) 加深到 #e2e8f0 (90%)，让 Win 上的圆角轮廓更清晰，
+     Mac 视觉几乎察觉不到差异。 */
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.sales-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 30px 32px 12px;
+}
+
+.sales-page-head h1 {
+  margin: 0;
+  color: #202226;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.sales-page-subtitle {
+  margin-top: 6px;
+  color: #747b86;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.sales-page-date {
+  color: #8a94a6;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.sales-sub-tabs .ant-tabs-nav {
+  margin: 0;
+  padding: 28px 32px 0;
+}
+
+.sales-sub-tabs .ant-tabs-nav::before {
+  border-bottom-color: #e4e7ec;
+}
+
+.sales-sub-tabs .ant-tabs-tab {
+  margin: 0 32px 0 0 !important;
+  padding: 0 0 13px;
+  color: #606774;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.sales-sub-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #202226 !important;
+}
+
+.sales-sub-tabs .ant-tabs-ink-bar {
+  height: 3px;
+  background: #2f66ff;
+}
+
+.sales-list-panel {
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.sales-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 24px 18px;
+  border-bottom: 0;
+  background: #fff;
+}
+
+.sales-filter-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  flex-wrap: nowrap;
+  gap: 16px;
+  min-width: 0;
+}
+
+.sales-filter-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  min-width: 0;
+}
+
+.sales-filter-label {
+  flex: 0 0 auto;
+  height: 38px;
+  line-height: 38px;
+  color: #666666;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── ymt native filter bar (SalesView) ─────────────────────────────────── */
+.ymt-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 14px 28px;  /* 整体三个筛选器右移；右侧 padding 不变保持表格对齐 */
+  border-bottom: 0;
+  background: #fff;
+}
+
+.ymt-filter {
+  flex-shrink: 0;
+  height: 38px;
+  border: 0;
+  border-radius: 6px;
+  background: #f7f7f8;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+/* Filter 1: time range（保留为通用 select-filter 的别名） */
+.ymt-time-filter,
+.ymt-select-filter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.ymt-time-filter {
+  width: 180px;
+}
+
+.ymt-select-filter {
+  min-width: 150px;
+}
+
+/* 次级按钮（查询/重置等，业务员"新建"按钮的低权重版本） */
+.ymt-secondary-btn {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #d9dde3;
+  border-radius: 6px;
+  background: #fff;
+  color: #1f2630;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.ymt-secondary-btn:hover {
+  background: #f7f8fa;
+  border-color: #b8bfc7;
+}
+
+.ymt-filter-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5f6368;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.ymt-filter-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2630;
+  white-space: nowrap;
+}
+
+.ymt-chevron {
+  width: 14px;
+  height: 14px;
+  color: #b8bcc3;
+  flex-shrink: 0;
+}
+
+.ymt-select-native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Filter 2: search — 固定宽度 480px，保证 placeholder 完整显示 */
+.ymt-search-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  flex: 0 0 480px;
+  min-width: 0;
+  cursor: text;
+}
+
+.ymt-search-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #b8bcc3;
+}
+
+.ymt-search-text {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #252a33;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: inherit;
+  line-height: 38px;
+  height: 38px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ymt-search-text::placeholder {
+  color: #a3a8b1;
+}
+
+/* Filter 3: date range */
+.ymt-date-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  width: 290px;
+}
+
+.ymt-date-label {
+  color: #55585f;
+  flex-shrink: 0;
+}
+
+.ymt-date-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #252a33;
+  font-size: 14px;
+  font-weight: 400;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.ymt-date-input::placeholder {
+  color: #a3a8b1;
+  opacity: 1;
+}
+
+/* 适配 AntD DatePicker 嵌入到 .ymt-date-filter 外壳中 */
+.ant-picker.ymt-date-input {
+  padding: 0 4px;
+  height: 100%;
+  align-self: stretch;
+  box-shadow: none;
+}
+.ant-picker.ymt-date-input .ant-picker-input > input {
+  text-align: center;
+  font-size: 14px;
+  font-family: inherit;
+  color: #252a33;
+  cursor: pointer;
+}
+.ant-picker.ymt-date-input .ant-picker-input > input::placeholder {
+  color: #a3a8b1;
+  opacity: 1;
+}
+
+.ymt-date-sep {
+  font-size: 13px;
+  color: #b0b4bb;
+  flex-shrink: 0;
+}
+
+/* Create button */
+.ymt-create-btn {
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f66ff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(47, 102, 255, 0.22);
+  transition: background 0.15s;
+  margin-left: auto;
+  margin-right: 28px;
+}
+
+.ymt-create-btn:hover {
+  background: #2356d9;
+}
+
+/* ── procurement search (Ant Design Input.Search, keeps sales-* classes) ── */
+.procurement-toolbar-row .sales-search-input.ant-input-group-wrapper {
+  height: 38px;
+}
+
+.procurement-toolbar-row .sales-search-input .ant-input-affix-wrapper {
+  height: 38px !important;
+  border-color: #eef0f3 !important;
+  border-radius: 6px 0 0 6px !important;
+  background: rgb(247, 247, 247) !important;
+  box-shadow: none !important;
+}
+
+.procurement-toolbar-row .sales-search-input .ant-input-search-button {
+  height: 38px !important;
+  border-color: #eef0f3 !important;
+  border-left: 0;
+  background: rgb(247, 247, 247);
+  box-shadow: none;
+  color: #8c939d;
+}
+
+.procurement-toolbar-row .sales-search-input .ant-input::placeholder {
+  color: #a3a8b1;
+  font-size: 14px;
+}
+
+.sales-range-select .ant-select-selection-item {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  min-width: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+  line-height: 36px !important;
+  font-size: 14px;
+  color: #30343b;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sales-range-select .ant-select-selector {
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 34px 0 14px !important;
+}
+
+.sales-range-select .ant-select-selection-search {
+  display: flex;
+  align-items: center;
+  height: 36px;
+}
+
+.sales-range-select .ant-select-selection-placeholder {
+  line-height: 36px !important;
+}
+
+.sales-range-select .ant-select-arrow {
+  top: 50%;
+  right: 12px;
+  margin-top: 0;
+  transform: translateY(-50%);
+  color: #a8adb5;
+}
+
+
+.sales-primary-button {
+  height: 38px;
+  border-radius: 6px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 600;
+  background: #2f66ff;
+  box-shadow: 0 6px 14px rgba(47, 102, 255, 0.18);
+}
+
+.sales-data-table {
+  padding: 0 16px;
+  background: #fff;
+}
+
+.sales-data-table .ant-table,
+.sales-data-table .ant-table-container,
+.sales-data-table .ant-table-content {
+  background: #fff;
+  border-radius: 0 !important;
+}
+
+/* 抵消 AntD 5 默认给首末表头加的圆角 */
+.sales-data-table .ant-table-thead > tr > th:first-child,
+.sales-data-table .ant-table-thead > tr > th:last-child {
+  border-radius: 0 !important;
+}
+
+.sales-data-table .ant-table-thead > tr > th {
+  height: 50px;
+  padding: 14px 16px !important;
+  background: rgb(247, 247, 247) !important;
+  color: #2d3036;
+  font-size: 14px;
+  font-weight: 800;
+  border-bottom: 1px solid #e4e7eb;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.sales-data-table .ant-table-tbody > tr > td {
+  padding: 18px 16px !important;
+  color: #25282e;
+  font-size: 14px;
+  font-weight: 400;
+  border-bottom: 1px solid #eeeeee;
+  vertical-align: middle;
+}
+
+.sales-data-table .ant-table-tbody > tr:hover > td {
+  background: #fafbfc !important;
+}
+
+.sales-data-table .ant-table-cell-fix-left,
+.sales-data-table .ant-table-cell-fix-right {
+  background: #fff;
+}
+
+.sales-data-table .ant-table-thead .sales-action-column,
+.sales-data-table .ant-table-tbody .sales-action-column {
+  text-align: left !important;
+  border-left: 1px solid #f0f0f0;
+  box-shadow: -8px 0 14px -18px rgba(15, 23, 42, 0.32);
+}
+
+.sales-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.sales-inline-actions .ant-btn-link {
+  height: 24px;
+  padding: 0;
+  color: #2f66ff;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 24px;
+}
+
+.sales-table-code {
+  /* 合同编号统一对齐业务员板块订单表的色值 #334155 */
+  color: #334155;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.sales-table-code:hover {
+  color: #2563EB;
+  text-decoration: underline;
+}
+
+.sales-table-code.is-empty {
+  color: #CBD5E1;
+  font-weight: 400;
+  cursor: default;
+}
+
+.sales-table-code.is-empty:hover {
+  color: #CBD5E1;
+  text-decoration: none;
+}
+
+.sales-table-summary {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #5f6673;
+  font-size: 14px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sales-due-date {
+  display: inline-block;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sales-customer-name {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #202226;
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.sales-rating-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.sales-rating-a {
+  color: #52c41a;
+  background: #f6ffed;
+}
+
+.sales-rating-b {
+  color: #1677ff;
+  background: #eef6ff;
+}
+
+.sales-rating-c {
+  color: #fa8c16;
+  background: #fff7e6;
+}
+
+.sales-rating-d {
+  color: #f5222d;
+  background: #fff1f0;
+}
+
+.sales-inline-actions .ant-btn-link.ant-btn-dangerous {
+  color: #e5484d;
+}
+
+.sales-data-table .ant-table-thead .sales-customer-action-column,
+.sales-data-table .ant-table-tbody .sales-customer-action-column {
+  padding-left: 18px !important;
+}
+
+.sales-customer-actions {
+  gap: 18px;
+}
+
+/* ── 全站状态色块视觉规范（统一形状，颜色仍由 AntD `color="..."` 语义化控制）──
+ * 22px 高 / 4px 圆角 / 12px / 600 字重 / 无边框 / 浅底深字。
+ * 提升为全局 .ant-tag：覆盖到 Modal / Drawer 等 portal 渲染的弹层场景
+ * （否则面板域的 scope 选择器进不去 portal，弹层 tag 会回退到 AntD 默认 8px 圆角 + 有边框）。 */
+.ant-tag {
+  min-height: 22px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  border: 0;
+}
+
+/* ── SalesView 表格视觉优化（仅作用于业务员板块，不影响其他视图）─────────── */
+
+/* 表头：底色 rgb(247,247,247)，字色加深，字重 600 */
+.sales-management-panel .sales-data-table .ant-table-thead > tr > th {
+  background: rgb(247, 247, 247) !important;
+  color: #1a1d23;
+  font-weight: 600;
+  border-bottom: 1px solid #eef1f5;
+}
+
+/* 正文：主信息颜色加深 */
+.sales-management-panel .sales-data-table .ant-table-tbody > tr > td {
+  color: #1a1d23;
+  border-bottom: 1px solid #eef1f5;
+}
+
+/* 客户名：更深更清晰 */
+.sales-management-panel .sales-customer-name {
+  color: #0f1318;
+  font-weight: 700;
+}
+
+/* 行 hover：极浅中性灰，避免明显蓝色 */
+.sales-management-panel .sales-data-table .ant-table-tbody > tr:hover > td,
+.sales-management-panel .sales-data-table .ant-table-tbody > tr.ant-table-row-hover > td {
+  background: #f7f8fa !important;
+}
+
+/* ── 业务员订单表：深灰编号 + 圆润数字 + 低饱和状态标签 ─────────────── */
+.sales-management-panel .sales-order-table .ant-table-tbody > tr > td {
+  color: #334155;
+}
+
+.sales-management-panel .sales-order-table .sales-table-code,
+.sales-management-panel .sales-order-table .sales-customer-name,
+.sales-management-panel .sales-order-table .sales-order-person,
+.sales-management-panel .sales-order-table .sales-order-number,
+.sales-management-panel .sales-order-table .sales-order-amount,
+.sales-management-panel .sales-order-table .sales-due-date {
+  font-family: ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  color: #334155;
+  /* 13px → 14px：两个 tab 表格正文与系统其他表格保持同一基准字号 */
+  font-size: 14px;
+  font-weight: 520;
+}
+
+/* 业务员字段视觉降权：业务员是汉字（笔画密度高），在 520 字重 + 80px 窄列下
+ * 视觉重量明显超过同行的总数量列（数字本身轻 + right-align）。
+ * 降到 400 字重 + slate-600 色，让业务员"看起来"和总数量栏视觉权重一致。
+ * 必须放在上方共享规则之后，否则同 specificity 下被后写规则覆盖。 */
+.sales-management-panel .sales-order-table .sales-order-person {
+  font-weight: 400;
+  color: #475569;
+  letter-spacing: 0.01em;
+}
+
+.sales-management-panel .sales-order-table .sales-table-code {
+  letter-spacing: 0.01em;
+}
+
+.sales-management-panel .sales-order-table .sales-table-code:hover {
+  color: #334155;
+}
+
+.sales-management-panel .sales-order-table .sales-table-code.is-empty,
+.sales-management-panel .sales-order-table .sales-table-code.is-empty:hover {
+  color: #cbd5e1;
+}
+
+.sales-management-panel .sales-order-table .sales-customer-name {
+  color: #334155;
+}
+
+.sales-management-panel .sales-order-table .sales-table-summary {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.sales-management-panel .sales-order-table .sales-order-amount {
+  color: #334155;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 22px;
+  margin-inline-end: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-draft {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-pending_approval {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-procurement {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-production {
+  background: #ecfeff;
+  color: #0e7490;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-pending_ship_approval {
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-ready_ship {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-shipped {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.sales-management-panel .sales-order-table .ymt-status-rejected {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.sales-management-panel .sales-order-table .ant-table-tbody > tr:hover > td,
+.sales-management-panel .sales-order-table .ant-table-tbody > tr.ant-table-row-hover > td {
+  background: #f8fafc !important;
+}
+
+.sales-management-panel .sales-order-table .ant-table-tbody > tr.sales-order-row-selected > td {
+  background: #edf4ff !important;
+}
+
+.sales-management-panel .sales-order-table .ant-table-tbody > tr.sales-order-row-selected > td:first-child {
+  box-shadow: inset 3px 0 0 #4b6b9a;
+}
+
+.sales-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 76px;
+  margin: 0 16px;
+  padding: 18px 24px;
+  border-top: 1px solid #eeeeee;
+  background: #fff;
+}
+
+.sales-pagination-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sales-page-size-select .ant-select-selector {
+  display: flex !important;
+  align-items: center !important;
+  height: 38px !important;
+  padding: 0 34px 0 14px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: rgb(247, 247, 247) !important;
+  box-shadow: none !important;
+}
+
+.sales-page-size-select .ant-select-selection-item {
+  display: flex;
+  align-items: center;
+  height: 38px;
+  min-width: 0;
+  overflow: hidden;
+  color: #30343b;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 38px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sales-page-size-select .ant-select-selection-search {
+  display: flex;
+  align-items: center;
+  height: 38px;
+}
+
+.sales-page-size-select .ant-select-arrow {
+  top: 50%;
+  right: 12px;
+  margin-top: 0;
+  transform: translateY(-50%);
+  color: #a8adb5;
+}
+
+.sales-pagination-total {
+  color: #747b86;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sales-pagination-control {
+  display: flex;
+  align-items: center;
+  margin: 0 !important;
+}
+
+.sales-pagination-control .ant-pagination-prev,
+.sales-pagination-control .ant-pagination-next,
+.sales-pagination-control .ant-pagination-item {
+  min-width: 38px;
+  height: 38px;
+  line-height: 36px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.sales-pagination-control .ant-pagination-item-active {
+  background: #edf2ff;
+}
+
+.sales-pagination-control .ant-pagination-item-active a {
+  color: #2f66ff;
+  font-weight: 700;
+}
+
+.sales-pagination-control .ant-pagination-options {
+  margin-left: 18px;
+}
+
+.sales-pagination-control .ant-pagination-options-quick-jumper {
+  height: 38px;
+  color: #30343b;
+  font-size: 14px;
+  line-height: 38px;
+}
+
+.sales-pagination-control .ant-pagination-options-quick-jumper input {
+  width: 62px;
+  height: 38px;
+  margin: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: rgb(247, 247, 247);
+  box-shadow: none;
+  text-align: center;
+}
+
+.procurement-management-panel {
+  font-size: 14px;
+  color: #202226;
+}
+
+.procurement-loading-block {
+  padding: 28px 32px 36px;
+}
+
+.procurement-toolbar-row {
+  padding: 28px 24px 18px;
+}
+
+.procurement-toolbar-summary {
+  color: #747b86;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.procurement-empty-block {
+  padding: 42px 16px;
+  background: #fff;
+}
+
+.procurement-empty-block.compact {
+  padding: 28px 0;
+}
+
+.procurement-order-list {
+  padding: 0 16px 18px;
+  background: #fff;
+}
+
+.procurement-order-table {
+  padding-top: 0;
+}
+
+.procurement-order-table .ant-table-expanded-row > td {
+  padding: 0 16px 14px !important;
+  background: #f8fafc;
+}
+
+.procurement-order-table .ant-table-row-expand-icon-cell {
+  width: 44px;
+}
+
+.procurement-order-table .ant-table-thead .sales-action-column,
+.procurement-order-table .ant-table-tbody .sales-action-column {
+  text-align: left !important;
+}
+
+.procurement-order-code-cell {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+
+.procurement-product-summary {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  color: #5f6673;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.procurement-status-tags {
+  max-width: 170px;
+}
+
+.procurement-order-card {
+  overflow: hidden;
+  border-bottom: 1px solid #eeeeee;
+  background: #fff;
+}
+
+.procurement-order-card:first-child {
+  border-top: 1px solid #eeeeee;
+}
+
+.procurement-order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 92px;
+  padding: 18px 16px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.procurement-order-header:hover {
+  background: #fafbfc;
+}
+
+.procurement-order-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.procurement-expand-icon {
+  width: 16px;
+  padding-top: 3px;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.procurement-order-info {
+  min-width: 0;
+}
+
+.procurement-order-tags {
+  margin-bottom: 4px;
+}
+
+.procurement-order-code {
+  color: #2f66ff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.procurement-order-title {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #202226;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.procurement-order-summary {
+  max-width: 620px;
+  overflow: hidden;
+  color: #5f6673;
+  font-size: 14px;
+  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.procurement-order-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex: 0 0 auto;
+  color: #5f6673;
+  font-size: 13px;
+}
+
+.procurement-progress-text {
+  color: #5f6673;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.procurement-due {
+  min-width: 76px;
+  color: #747b86;
+  font-weight: 650;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.procurement-due.warning {
+  color: #b96b13;
+}
+
+.procurement-due.danger {
+  color: #e5484d;
+}
+
+/* Disable expand/collapse animation without letting expanded content escape table width. */
+.procurement-order-table .ant-table-expanded-row > td,
+.procurement-order-table [class*="ant-motion"] {
+  animation: none !important;
+  animation-duration: 0ms !important;
+  transition: none !important;
+  transition-duration: 0ms !important;
+  height: auto !important;
+  opacity: 1 !important;
+}
+
+.procurement-order-table .ant-table-expanded-row > td {
+  overflow: hidden !important;
+}
+
+.procurement-order-table .ant-table-expanded-row-fixed {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Kill Spin loading transitions inside expanded material panel */
+.procurement-order-table .ant-table-expanded-row .ant-spin-container,
+.procurement-order-table .ant-table-expanded-row [class*="ant-spin-blur"] {
+  transition: none !important;
+  opacity: 1 !important;
+}
+.procurement-order-table .ant-table-expanded-row .ant-spin-dot-holder,
+.procurement-order-table .ant-table-expanded-row [class*="ant-spin-dot"] {
+  transition: none !important;
+  animation: none !important;
+}
+
+.procurement-expand-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 10px;
+  cursor: pointer;
+  transition: none;
+  padding: 0;
+  line-height: 1;
+  outline: none;
+}
+
+.procurement-expand-arrow:hover {
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.procurement-expand-arrow.open {
+  border-color: #2f66ff;
+  background: #edf2ff;
+  color: #2f66ff;
+}
+
+.procurement-material-panel {
+  margin: 0;
+  border: 1px solid #eef1f5;
+  border-radius: 6px;
+  background: #fbfcfe;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.procurement-material-table {
+  padding: 0 !important;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* antd can set pixel widths on nested tables after scroll measurements.
+   Keep this forced to 100% or the BOM panel can escape the expanded row again. */
+.procurement-material-table .ant-table,
+.procurement-material-table .ant-table-container,
+.procurement-material-table .ant-table-content,
+.procurement-material-table table {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.procurement-material-table table {
+  table-layout: fixed !important;
+}
+
+.procurement-material-table .ant-table-thead > tr > th {
+  height: 30px;
+  padding: 6px 8px !important;
+  background: rgb(247, 247, 247) !important;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.procurement-material-table .ant-table-tbody > tr > td {
+  padding: 6px 8px !important;
+  font-size: 12px;
+  line-height: 18px;
+  border-bottom-color: #e8edf5;
+  overflow: hidden;
+  vertical-align: middle;
+  word-break: break-word;
+}
+
+.procurement-material-table .ant-table-tbody > tr:hover > td {
+  background: #fbfcfe !important;
+}
+
+.procurement-material-table .procurement-strong-text {
+  display: block;
+  font-size: 13px;
+  white-space: normal;
+}
+
+.procurement-material-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #eeeeee;
+  background: #fff;
+}
+
+.procurement-small-primary {
+  border-radius: 6px;
+  background: #2f66ff;
+}
+
+/* 备料状态开关：已备齐绿底，与库存余量绿字 #16a34a 统一 */
+.procurement-ready-switch.ant-switch-checked {
+  background: #16a34a;
+}
+.procurement-ready-switch.ant-switch-checked:hover:not(.ant-switch-disabled) {
+  background: #15803d;
+}
+
+/* + 新增物料按钮：浅蓝底突出，区别于 default 按钮 */
+.procurement-add-material-btn.ant-btn {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+.procurement-add-material-btn.ant-btn:hover {
+  background: #dbeafe !important;
+  border-color: #93c5fd !important;
+  color: #1e40af !important;
+}
+.procurement-add-material-btn.ant-btn:disabled,
+.procurement-add-material-btn.ant-btn:disabled:hover {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+}
+
+/* 排入生产按钮：复用新增物料的字号与字重，色调改为绿色突出"流转到下一环节" */
+.procurement-queue-production-btn.ant-btn {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #047857;
+  font-weight: 600;
+}
+.procurement-queue-production-btn.ant-btn:hover {
+  background: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+  color: #065f46 !important;
+}
+.procurement-queue-production-btn.ant-btn:disabled,
+.procurement-queue-production-btn.ant-btn:disabled:hover {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+}
+
+/* ── 全站 AI 按钮：蓝紫渐变 + 微光 + 科技感 ─────────────────────────────
+ * 用法：<Button className="ymt-ai-btn" size="small">🪄 AI 智能解析</Button>
+ * 同时作用于 SalesView Excel 解析按钮 与 ProcurementView 物料补全按钮
+ */
+@keyframes ymt-ai-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ymt-ai-btn.ant-btn {
+  position: relative;
+  overflow: hidden;
+  height: auto;
+  padding: 4px 14px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%) !important;
+  background-size: 200% 100%;
+  color: #ffffff !important;
+  font-size: 13px;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+  box-shadow:
+    0 4px 14px rgba(99, 102, 241, 0.35),
+    0 1px 2px rgba(79, 70, 229, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+/* 内置 hover 高光：通过移动 background-position 实现一道掠过的光泽 */
+.ymt-ai-btn.ant-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  background-position: 200% 0;
+  pointer-events: none;
+  transition: background-position 0.6s ease;
+}
+
+.ymt-ai-btn.ant-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #9333ea 100%) !important;
+  background-size: 200% 100%;
+  box-shadow:
+    0 6px 20px rgba(79, 70, 229, 0.45),
+    0 2px 4px rgba(79, 70, 229, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.ymt-ai-btn.ant-btn:hover:not(:disabled)::before {
+  background-position: -200% 0;
+}
+
+.ymt-ai-btn.ant-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 2px 6px rgba(79, 70, 229, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.ymt-ai-btn.ant-btn:focus-visible {
+  outline: 2px solid #c4b5fd;
+  outline-offset: 2px;
+}
+
+/* 文字与图标都用白 + 跑光动画（加载态下也保留渐变底色） */
+.ymt-ai-btn.ant-btn > span,
+.ymt-ai-btn.ant-btn .anticon {
+  color: #ffffff !important;
+  position: relative;
+  z-index: 1;
+}
+
+.ymt-ai-btn.ant-btn .ant-btn-loading-icon .anticon {
+  color: #ffffff !important;
+}
+
+.ymt-ai-btn.ant-btn:disabled,
+.ymt-ai-btn.ant-btn:disabled:hover {
+  background: linear-gradient(135deg, #cbd5e1 0%, #c7d2fe 100%) !important;
+  background-size: 100% 100%;
+  color: #64748b !important;
+  box-shadow: none !important;
+  filter: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.ymt-ai-btn.ant-btn:disabled::before,
+.ymt-ai-btn.ant-btn:disabled:hover::before {
+  display: none;
+}
+
+.ymt-ai-btn.ant-btn:disabled > span,
+.ymt-ai-btn.ant-btn:disabled .anticon {
+  color: #64748b !important;
+}
+
+/* loading 态下保持渐变 + 静态光泽，但不再 hover 弹起 */
+.ymt-ai-btn.ant-btn.ant-btn-loading {
+  cursor: progress;
+  filter: none;
+  transform: none;
+  animation: ymt-ai-shimmer 2.4s linear infinite;
+}
+
+/* ── AI 标识 chip：白底 + 渐变描边 + 渐变文字（非按钮，纯标识用）─────── */
+.ymt-ai-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 11px;
+  border-radius: 999px;
+  /* 双 background 实现"内层白底 + 外层渐变描边" */
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%) border-box;
+  border: 1.5px solid transparent;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(139, 92, 246, 0.08);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ymt-ai-tag-text {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.procurement-strong-text {
+  color: #202226;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.procurement-material-table .ant-typography,
+.procurement-material-table .procurement-editable-text {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.procurement-material-hint {
+  display: block;
+  max-width: 100%;
+  font-size: 9px;
+  line-height: 1.2;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* 与全站状态色块对齐：4px 圆角 / 600 字重 / 无边框（原 5px/650/有边框 与统一规范不一致） */
+.procurement-light-tag,
+.procurement-material-table .ant-tag {
+  min-height: 22px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  border: 0;
+}
+
+.procurement-material-status-cell .ant-space-item {
+  line-height: 1;
+}
+
+.procurement-material-status-cell,
+.procurement-material-status-cell .ant-space,
+.procurement-material-status-cell .ant-space-item {
+  max-width: 100%;
+}
+
+.procurement-material-edit-actions {
+  max-width: 100%;
+}
+
+.procurement-material-edit-actions .ant-space-item {
+  max-width: 100%;
+}
+
+.procurement-material-edit-actions .ant-btn {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0;
+  font-size: 12px;
+}
+
+.procurement-status-choice {
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.procurement-status-choice.active {
+  font-weight: 700;
+}
+
+.procurement-editable-text {
+  cursor: pointer;
+}
+
+.procurement-inline-input {
+  width: 100%;
+  max-width: 86px;
+  height: 24px;
+  border: 1px solid #eef0f3;
+  border-radius: 6px;
+  padding: 2px 8px;
+  background: rgb(247, 247, 247);
+  color: #30343b;
+  font-size: 12px;
+  outline: none;
+}
+
+.procurement-date-input {
+  max-width: 96px;
+}
+
+.procurement-inventory-table .ant-table-tbody > tr > td {
+  vertical-align: middle;
+}
+
+.procurement-inventory-table .sales-action-column {
+  text-align: right !important;
+}
+
+.procurement-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 16px 8px;
+}
+
+/* ── 采购3个 tab 表格的字体字号颜色风格对齐业务员订单表（仅文字，不变动其他格式）── */
+
+/* 表头：字色加深、字重对齐 sales-order-table 表头 */
+.procurement-management-panel .procurement-order-table .ant-table-thead > tr > th,
+.procurement-management-panel .procurement-inventory-table .ant-table-thead > tr > th {
+  color: #1a1d23;
+  font-weight: 600;
+}
+
+/* 正文单元格主色：#334155 */
+.procurement-management-panel .procurement-order-table .ant-table-tbody > tr > td,
+.procurement-management-panel .procurement-inventory-table .ant-table-tbody > tr > td {
+  color: #334155;
+}
+
+/* 主信息文本：圆体数字 + 14px / 520 字重 / #334155，与 sales-order-table 一致 */
+.procurement-management-panel .procurement-order-table .sales-table-code,
+.procurement-management-panel .procurement-order-table .procurement-order-title,
+.procurement-management-panel .procurement-order-table .procurement-strong-text,
+.procurement-management-panel .procurement-inventory-table .sales-table-code,
+.procurement-management-panel .procurement-inventory-table .procurement-strong-text {
+  font-family: ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 520;
+}
+
+/* 产品摘要副文本：对齐 sales-order-table 的 summary 视觉（13px / 400 / #64748b） */
+.procurement-management-panel .procurement-order-table .procurement-product-summary {
+  font-family: ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* 业务员、规格、备注、更新时间等次要文本：对齐 sales-order-person 视觉 */
+.procurement-management-panel .procurement-order-table .ant-typography.ant-typography-secondary,
+.procurement-management-panel .procurement-inventory-table .ant-typography.ant-typography-secondary {
+  font-family: ui-rounded, "SF Pro Rounded", "Avenir Next Rounded", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.gm-management-panel,
+.user-management-panel,
+.logistics-management-panel {
+  font-size: 14px;
+  color: #202226;
+}
+
+.user-management-panel .sales-data-table .ant-select-sm .ant-select-selection-item,
+.user-management-panel .sales-data-table .ant-select-sm .ant-select-selection-placeholder {
+  font-size: 13px;
+  line-height: 22px;
+}
+
+/* ── 业务员·客户管理·客户详情页 ─────────────────────────────────────────── */
+.customer-detail {
+  padding: 8px 24px 24px;
+}
+
+/* 返回列表胶囊按钮 */
+.customer-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px 0 10px;
+  margin-bottom: 14px;
+  border: 1px solid #e1e5ec;
+  border-radius: 999px;
+  background: #fff;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.customer-detail-back:hover {
+  background: #f5f7fa;
+  border-color: #cbd5e1;
+  color: #1a1d23;
+}
+
+.customer-detail-back svg {
+  flex-shrink: 0;
+}
+
+.customer-detail .customer-detail-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid #eef1f5;
+}
+
+.customer-detail .customer-detail-card:last-child {
+  margin-bottom: 0;
+}
+
+.customer-detail .customer-detail-card .ant-card-head {
+  min-height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid #eef1f5;
+  background: #fafbfc;
+}
+
+.customer-detail .customer-detail-card .ant-card-head-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1d23;
+  padding: 12px 0;
+}
+
+.customer-detail .customer-detail-card .ant-card-body {
+  padding: 16px;
+}
+
+.customer-detail .ant-descriptions-item-label {
+  font-size: 13px;
+}
+
+.customer-detail .ant-descriptions-item-content {
+  font-size: 14px;
+}
+
+/* 历史订单行 */
+.customer-order-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.customer-order-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 4px;
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+}
+
+.customer-order-row:last-child {
+  border-bottom: 0;
+}
+
+.customer-order-row:hover {
+  background: #f9fafb;
+}
+
+.customer-order-product {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #4b5563;
+}
+
+/* 沟通记录表单 + Timeline */
+.comm-log-form {
+  background: #fafbfc;
+  border: 1px solid #eef1f5;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.comm-log-form .ant-form-item-label {
+  padding-bottom: 4px;
+}
+
+.comm-log-form .ant-form-item-label > label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.comm-log-timeline.ant-timeline {
+  padding-top: 4px;
+}
+
+.comm-log-timeline .ant-timeline-item {
+  padding-bottom: 18px;
+}
+
+.comm-log-timeline .ant-timeline-item-last {
+  padding-bottom: 0;
+}
+
+.user-table-date {
+  display: inline-block;
+  white-space: nowrap;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* 用户管理表格紧凑化：固定布局，按列 width 比例分配（不超过容器） */
+.user-management-panel .sales-data-table .ant-table {
+  table-layout: fixed;
+}
+.user-management-panel .sales-data-table .ant-table-tbody > tr > td {
+  word-break: break-word;
+}
+/* 操作列按钮紧凑 */
+.user-management-panel .sales-data-table .ant-btn-sm {
+  padding-inline: 8px;
+}
+
+.gm-empty-block {
+  padding: 42px 16px;
+  background: #fff;
+}
+
+.logistics-empty-block {
+  padding: 42px 16px;
+  background: #fff;
+}
+
+.logistics-tracking-no {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #2f66ff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.logistics-management-panel .sales-data-table .ant-table-content {
+  overflow-x: hidden !important;
+}
+
+.logistics-management-panel .sales-data-table table {
+  min-width: 0 !important;
+}
+
+.production-management-panel {
+  font-size: 14px;
+  color: #202226;
+}
+
+.production-page-head {
+  padding-top: 28px;
+}
+
+.production-summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-top: 14px;
+  padding-bottom: 4px;
+}
+
+.production-summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.production-summary-chip strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.production-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.production-summary-chip.chip-blue .production-chip-dot {
+  background: #2f66ff;
+}
+
+.production-summary-chip.chip-blue strong {
+  color: #2f66ff;
+}
+
+.production-summary-chip.chip-green .production-chip-dot {
+  background: #22c55e;
+}
+
+.production-summary-chip.chip-green strong {
+  color: #16a34a;
+}
+
+.production-summary-chip.chip-amber .production-chip-dot {
+  background: #f59e0b;
+}
+
+.production-summary-chip.chip-amber strong {
+  color: #b45309;
+}
+
+.production-filter-row {
+  padding: 22px 24px 16px;
+}
+
+.production-loading-block {
+  padding: 28px 32px 36px;
+}
+
+.production-empty-block {
+  padding: 42px 16px;
+  background: #fff;
+}
+
+.production-order-code-cell {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.production-order-no {
+  color: #94a3b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.production-data-table .ant-table-thead .sales-action-column,
+.production-data-table .ant-table-tbody .sales-action-column {
+  text-align: left !important;
+}
+
+.production-section-head {
+  padding: 20px 24px 8px;
+}
+
+.production-queue-section-divider {
+  border-top: 1px solid #f0f2f5;
+  margin-top: 8px;
+}
+
+@media (max-width: 768px) {
+  .sales-filter-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sales-filter-left {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sales-search-input,
+  .sales-search-input[style],
+  .sales-range-select,
+  .sales-range-select[style] {
+    width: 100% !important;
+  }
+
+  .ymt-filter-bar {
+    flex-wrap: wrap;
+  }
+
+  .ymt-time-filter,
+  .ymt-search-filter,
+  .ymt-date-filter,
+  .ymt-create-btn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .ymt-date-filter {
+    width: 100%;
+  }
+
+  .sales-pagination-bar {
+    align-items: stretch;
+    flex-direction: column;
+    margin: 0;
+  }
+
+  .sales-pagination-left,
+  .sales-pagination-control {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .procurement-order-header,
+  .procurement-order-meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .procurement-order-meta {
+    gap: 6px;
+    width: 100%;
+  }
+
+  .procurement-progress-text,
+  .procurement-due {
+    text-align: left;
+  }
+
+  .procurement-order-summary {
+    max-width: 100%;
+  }
+}

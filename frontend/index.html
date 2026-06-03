@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="x5-page-mode" content="app" />
+    <meta name="full-screen" content="yes" />
+    <meta name="x5-fullscreen" content="true" />
+    <meta name="browsermode" content="application" />
+    <meta name="format-detection" content="telephone=no" />
+    <!-- Web Font preload：让 Win 端首屏不出现 fallback → web font 跳变。
+         Mac 端 @font-face local() 会拦截下载，preload 也只是空闲请求。 -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="/fonts/Inter-var.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+          href="/fonts/NotoSansSC-400.woff2" />
+    <title>制造业订单管理系统</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

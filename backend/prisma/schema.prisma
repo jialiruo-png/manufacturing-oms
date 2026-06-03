@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model User {
+  id                 Int       @id @default(autoincrement())
+  name               String
+  phone              String
+  passwordHash       String
+  department         String
+  role               String
+  managerSubRole     String    @default("")
+  canApproveOrder    Boolean   @default(false)
+  canManageUsers     Boolean   @default(false)
+  isClerk            Boolean   @default(false)
+  canCreateOrderForSales Boolean @default(false)
+  isAdmin            Boolean   @default(false)
+  status             String    @default("pending")
+  remark             String    @default("")
+  lastLoginAt        DateTime?
+  loginFailedCount   Int       @default(0)
+  lastLoginFailedAt  DateTime?
+  loginLockedUntil   DateTime?
+  mustChangePassword Boolean   @default(false)
+  passwordChangedAt  DateTime?
+  tokenVersion       Int       @default(0)
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  customers Customer[]
+  orders Order[] @relation("OrderSalesperson")
+  passwordResetRequests PasswordResetRequest[]
+
+  @@index([status, deletedAt])
+  @@index([role, status, deletedAt])
+  @@index([managerSubRole, status, deletedAt])
+}
+
+model PasswordResetRequest {
+  id          Int       @id @default(autoincrement())
+  userId      Int?
+  identifier  String
+  status      String    @default("pending")
+  requestedAt DateTime  @default(now())
+  resolvedAt  DateTime?
+  resolvedBy  Int?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status, requestedAt])
+  @@index([userId, status])
+}
+
+model Customer {
+  id              Int      @id @default(autoincrement())
+  name            String
+  contact         String
+  phone           String
+  email           String   @default("")
+  address         String   @default("")
+  rating          String   @default("B") // A B C D
+  notes           String   @default("")
+  salespersonId   Int?
+  salespersonName String   @default("张业务")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  salesperson User?     @relation(fields: [salespersonId], references: [id], onDelete: SetNull)
+  orders      Order[]
+  commLogs    CommLog[]
+
+  @@index([salespersonId])
+}
+
+model CommLog {
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  type       String // 电话 拜访 微信 邮件 展会 视频会议
+  outcome    String // 满意 正常 待跟进 已成交 投诉
+  content    String
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId, createdAt])
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  name        String
+  description String   @default("")
+  unitPrice   Float
+  createdAt   DateTime @default(now())
+
+  bomItems   BomItem[]
+  orders     Order[]
+  orderItems OrderItem[]
+}
+
+model BomItem {
+  id           Int    @id @default(autoincrement())
+  productId    Int
+  materialName String
+  spec         String @default("")
+  unit         String @default("个")
+  qty          Float
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id            Int      @id @default(autoincrement())
+  customerId    Int
+  productId     Int?
+  quantity      Int
+  unitPrice     Float
+  totalAmount   Float
+  totalQuantity Int      @default(0)
+  itemCount     Int      @default(0)
+  urgent        Boolean  @default(false)
+  urgentSource  String   @default("")
+  urgentReason  String   @default("")
+  urgentConfirmed Boolean @default(false)
+  deliveryDate  DateTime
+  status        String   @default("draft")
+  // draft | pending_approval | procurement | production | ready_ship | shipped
+  progressPct   Int      @default(0)
+  prevStatus    String   @default("")
+  notes         String   @default("")
+  // Non-empty contractNo is protected by a partial unique index in SQL migration.
+  contractNo    String   @default("")
+  contractRef   String   @default("")
+  createdBy     String   @default("业务员")
+  salespersonId   Int?
+  salespersonName String   @default("")
+  purchaserName String?
+  orderDate     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  salesperson User?         @relation("OrderSalesperson", fields: [salespersonId], references: [id], onDelete: SetNull)
+  product     Product?      @relation(fields: [productId], references: [id])
+  materials   Material[]
+  approvalLog ApprovalLog[]
+  orderItems  OrderItem[]
+
+  @@index([status, deliveryDate, createdAt])
+  @@index([status, createdAt])
+  @@index([customerId, createdAt])
+  @@index([salespersonId, createdAt])
+  @@index([salespersonId, status, createdAt])
+  @@index([deliveryDate])
+}
+
+model OrderItem {
+  id            Int      @id @default(autoincrement())
+  orderId       Int
+  productId     Int?
+  productName   String
+  spec          String   @default("")
+  customerBrand String   @default("")
+  unit          String   @default("件")
+  quantity      Int
+  unitPrice     Float
+  subtotal      Float
+  remark        String   @default("")
+  detailRequirement String @default("")
+  sourceRowNo       String @default("")
+  ctnCount          Int?
+  qtyPerCtn         Int?
+  ctnVolume         Float?
+  totalVolume       Float?
+  ctnWeight         Float?
+  totalWeight       Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  materials Material[]
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Material {
+  id           Int       @id @default(autoincrement())
+  orderId      Int
+  orderItemId  Int?
+  name         String
+  spec         String    @default("")
+  unit         String    @default("个")
+  required     Float
+  status       String    @default("pending") // pending | in_progress | ready
+  urgent       Boolean   @default(false)
+  expectedDate DateTime?
+  notes        String    @default("")
+  source       String    @default("bom")
+  updatedAt    DateTime  @updatedAt
+
+  order     Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, status])
+  @@index([orderItemId])
+  @@index([status, urgent])
+}
+
+model Inventory {
+  id          Int      @id @default(autoincrement())
+  name        String
+  spec        String   @default("")
+  unit        String   @default("个")
+  quantity    Float    @default(0)
+  safetyStock Float    @default(0)
+  notes       String   @default("")
+  updatedAt   DateTime @updatedAt
+}
+
+model ApprovalLog {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  action    String // approved | rejected | requested
+  fromStage String
+  toStage   String
+  operator  String
+  reason    String   @default("")
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+}

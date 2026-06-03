@@ -1,0 +1,16 @@
+{
+  "name": "manufacturing-oms-v5",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "npm run build:frontend:safe && npm --prefix backend run db:generate",
+    "build:frontend:safe": "deploy/aliyun/build-frontend-safe.sh",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "db:deploy": "npm --prefix backend run db:deploy",
+    "start": "npm --prefix backend start"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

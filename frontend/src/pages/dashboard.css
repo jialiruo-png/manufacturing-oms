@@ -1,0 +1,466 @@
+/* ============================================================
+   Dashboard (数据看板) — page-specific styles
+   All classes prefixed with "db-" to avoid collisions
+   ============================================================ */
+
+/* ===== KPI GRID ===== */
+.db-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.db-kpi-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 18px 20px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border: 1px solid #f0f0f0;
+  transition: box-shadow 0.2s, transform 0.15s;
+  cursor: default;
+}
+.db-kpi-card:hover {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.db-kpi-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.db-kpi-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.db-kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.8px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.db-kpi-value .db-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  letter-spacing: 0;
+}
+
+.db-kpi-change {
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.db-kpi-change.up   { color: #dc2626; }
+.db-kpi-change.down { color: #059669; }
+.db-kpi-change.info { color: #6b7280; }
+
+.db-kpi-sub {
+  font-size: 11.5px;
+  color: #9ca3af;
+  margin-top: 5px;
+  line-height: 1.5;
+}
+.db-kpi-sub.warn { color: #d97706; }
+
+.db-kpi-progress {
+  margin-top: 10px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.db-kpi-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #c8251c, #e57373);
+  transition: width 0.6s ease;
+}
+
+/* ===== CARD BASE ===== */
+.db-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+  border: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+}
+
+.db-card-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.db-card-title-text {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.db-card-title-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #c8251c;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 4px 2px 0 0 rgba(220, 130, 130, 0.42);
+}
+
+.db-card-badge {
+  font-size: 11px;
+  font-weight: 400;
+  color: #9ca3af;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.db-card-badge.warn {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+/* ===== MIDDLE GRID ===== */
+.db-middle-grid {
+  display: grid;
+  grid-template-columns: 286px 1fr 276px;
+  gap: 14px;
+  margin-bottom: 16px;
+  align-items: stretch;
+}
+.db-middle-grid .db-card {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Pipeline */
+.db-pipeline-card .db-card-title,
+.db-sales-ranking-card .db-card-title {
+  min-height: 24px;
+}
+
+.db-pipeline-range-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #eeeeee;
+  border-radius: 999px;
+  background: #f7f7f7;
+  flex-shrink: 0;
+}
+
+.db-pipeline-range-toggle button {
+  height: 22px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 22px;
+  cursor: pointer;
+}
+
+.db-pipeline-range-toggle button.active {
+  background: #fff;
+  color: #b91c1c;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.db-pipeline-chart {
+  flex: 1;
+  min-height: 260px;
+}
+
+/* Map */
+.db-map-container {
+  flex: 1;
+  min-height: 310px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.db-map-legend {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.db-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #6b7280;
+}
+.db-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+  flex-shrink: 0;
+}
+
+.db-map-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+.db-map-stat { text-align: center; }
+.db-map-stat-val { font-size: 18px; font-weight: 700; color: #111827; }
+.db-map-stat-lbl { font-size: 10.5px; color: #9ca3af; margin-top: 2px; }
+
+/* Salesperson list */
+.db-sales-ranking-card {
+  box-sizing: border-box;
+  padding-bottom: 16px;
+}
+
+.db-sales-ranking-card .db-card-title {
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.db-sales-ranking-card .db-card-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.db-sp-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0;
+  flex: 1 1 0;
+  height: 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.db-sp-list { scrollbar-width: none; -ms-overflow-style: none; }
+.db-sp-list::-webkit-scrollbar { width: 0; height: 0; }
+.db-sp-list::-webkit-scrollbar-track { background: transparent; }
+.db-sp-list::-webkit-scrollbar-thumb { background: transparent; }
+.db-sp-list::-webkit-scrollbar-thumb:hover { background: transparent; }
+
+.db-sp-empty {
+  padding: 20px 0;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.db-sp-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 7px 0 8px;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+.db-sp-item:last-child { border-bottom: none; }
+
+.db-sp-rank {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.db-sp-rank.r1 { background: #fbbf24; color: #78350f; }
+.db-sp-rank.r2 { background: #cbd5e1; color: #334155; }
+.db-sp-rank.r3 { background: #d97706; color: #fff; }
+.db-sp-rank.rn { background: #f3f4f6; color: #9ca3af; }
+
+.db-sp-info {
+  flex: 1;
+  min-width: 0;
+}
+.db-sp-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+  min-width: 0;
+}
+.db-sp-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 18px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.db-sp-amt  {
+  min-width: 52px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: right;
+  white-space: nowrap;
+}
+.db-sp-bar-bg {
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.db-sp-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, rgb(190, 0, 0) 0%, rgba(190, 0, 0, 0.12) 100%);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* ===== TREND CHART ===== */
+.db-trend-chart { height: 250px; }
+
+/* ===== WARNING TABLE ===== */
+.db-warning-empty {
+  padding: 36px 0;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.db-warning-table {
+  width: 100%;
+  /* table-layout: fixed —— 锁列宽，避免长产品名挤掉其他列 */
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+/* 锁定每列宽度 */
+.db-warning-table th:nth-child(1), .db-warning-table td:nth-child(1) { width: 130px; }  /* 合同编号 */
+.db-warning-table th:nth-child(2), .db-warning-table td:nth-child(2) { width: 140px; }  /* 客户 */
+.db-warning-table th:nth-child(3), .db-warning-table td:nth-child(3) { width: auto;  }  /* 产品（剩余空间，溢出省略号） */
+.db-warning-table th:nth-child(4), .db-warning-table td:nth-child(4) { width: 110px; }  /* 款数/数量 */
+.db-warning-table th:nth-child(5), .db-warning-table td:nth-child(5) { width: 112px; }  /* 交期 */
+.db-warning-table th:nth-child(6), .db-warning-table td:nth-child(6) { width: 96px;  }  /* 剩余天数 */
+.db-warning-table th:nth-child(7), .db-warning-table td:nth-child(7) { width: 88px;  }  /* 状态 */
+.db-warning-table th:nth-child(8), .db-warning-table td:nth-child(8) { width: 92px;  }  /* 责任人 */
+
+.db-warning-table th {
+  text-align: left;
+  padding: 11px 14px;
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+.db-warning-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+  /* 所有单元格默认单行 + 省略号，长产品名 hover 显示完整（td 自带 title 属性） */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.db-warning-table tr:last-child td { border-bottom: none; }
+.db-warning-table tr:hover td { background: #fafbff; }
+
+.db-contract-code {
+  color: #4B6B9A;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.db-contract-code:hover {
+  color: #2563EB;
+  text-decoration: underline;
+}
+
+.db-contract-code.is-empty {
+  color: #CBD5E1;
+  font-weight: 400;
+  cursor: default;
+}
+
+.db-contract-code.is-empty:hover {
+  color: #CBD5E1;
+  text-decoration: none;
+}
+
+.db-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.db-status-badge.s-overdue { background: #fef2f2; color: #dc2626; }
+.db-status-badge.s-urgent  { background: #fffbeb; color: #d97706; }
+.db-status-badge.s-normal  { background: #f0fdf4; color: #16a34a; }
+
+.db-rem { font-weight: 600; }
+.db-rem.overdue { color: #dc2626; }
+.db-rem.urgent  { color: #d97706; }
+.db-rem.normal  { color: #16a34a; }
+
+/* ===== LOADING / ERROR ===== */
+.db-loading  { padding: 8px 0; }
+.db-error    { display: flex; justify-content: center; padding: 80px 0; color: #ef4444; }
+
+/* ===== LEAFLET OVERRIDES ===== */
+.leaflet-popup-content-wrapper {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.12) !important;
+  font-size: 12px !important;
+}
+.leaflet-popup-content { margin: 10px 12px !important; }

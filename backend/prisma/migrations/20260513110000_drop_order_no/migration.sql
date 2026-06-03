@@ -1,0 +1,3 @@
+DROP INDEX IF EXISTS "Order_orderNo_key";
+
+ALTER TABLE "Order" DROP COLUMN IF EXISTS "orderNo";
