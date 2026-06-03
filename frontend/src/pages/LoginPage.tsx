@@ -86,6 +86,20 @@ export default function LoginPage({ onLogin }: { onLogin: (auth: AuthState) => v
     }
   };
 
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setNotice('');
+    try {
+      const result = await usersApi.registerDemo();
+      message.success('已进入 Demo 体验模式（只读）');
+      onLogin({ user: result.user, token: result.token });
+    } catch (error) {
+      setNotice(errorText(error, '试用账号创建失败，请稍后再试'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRegister = async (values: RegisterValues) => {
     setLoading(true);
     setNotice('');
@@ -186,6 +200,25 @@ export default function LoginPage({ onLogin }: { onLogin: (auth: AuthState) => v
               <button type="button" style={linkButtonStyle} onClick={() => { setMode('register'); setNotice(''); }}>
                 新用户注册
               </button>
+            </div>
+
+            <div style={{
+              marginTop: 24,
+              padding: '18px 20px',
+              border: '1px dashed #c4000b',
+              borderRadius: 12,
+              background: '#fff7f7',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#c4000b', marginBottom: 6 }}>
+                🎯 一键体验 Demo（只读模式）
+              </div>
+              <div style={{ fontSize: 13, color: '#7b8494', marginBottom: 12, lineHeight: 1.55 }}>
+                免注册，直接进入只读试用账号；登入后可切换 6 种岗位视角，浏览全部功能页面。所有写入操作均会被服务端拒绝。
+              </div>
+              <Button type="default" loading={loading} onClick={handleDemoLogin} style={{ width: '100%', height: 42, borderColor: '#c4000b', color: '#c4000b', fontWeight: 700 }}>
+                进入 Demo 体验
+              </Button>
             </div>
           </Form>
         ) : (

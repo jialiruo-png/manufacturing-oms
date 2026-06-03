@@ -365,6 +365,50 @@ router.post('/register', validate('body', userRegisterSchema), async (req, res) 
   }
 });
 
+// Demo registration: one-click create a read-only viewer account and return a JWT.
+// Demo accounts have role='demo' and status='enabled' (no admin approval needed).
+// The authenticate middleware enforces read-only by blocking non-GET requests at runtime
+// and grants view-side permissions so they can browse every role's pages.
+router.post('/register-demo', async (req, res) => {
+  try {
+    const rawName = normalizeText(req.body?.name);
+    const suffix = Math.random().toString(36).slice(2, 8);
+    const name = rawName ? `${rawName}（试用）` : `试用用户-${suffix}`;
+    const phone = `demo-${Date.now()}-${suffix}`;
+    const password = `demo-${Math.random().toString(36).slice(2)}`;
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        phone,
+        passwordHash: hashPassword(password),
+        department: '试用体验',
+        role: 'demo',
+        managerSubRole: '',
+        canApproveOrder: false,
+        canManageUsers: false,
+        isClerk: false,
+        canCreateOrderForSales: false,
+        isAdmin: false,
+        status: 'enabled',
+        remark: 'Demo account · auto-created',
+        passwordChangedAt: new Date(),
+      },
+    });
+
+    const token = signUserToken(user);
+
+    res.status(201).json({
+      message: '已为你创建试用账号，正在进入只读模式',
+      user: publicUser(user),
+      token,
+    });
+  } catch (error) {
+    console.error('register-demo failed', error);
+    res.status(500).json({ error: '服务器错误，无法创建试用账号' });
+  }
+});
+
 router.post('/password-reset-requests', async (req, res) => {
   try {
     const identifier = normalizeText(req.body.identifier);

@@ -1,5 +1,5 @@
 export const REGISTER_ROLES = ['sales', 'purchase', 'production', 'logistics', 'manager'] as const;
-export const ACCOUNT_ROLES = [...REGISTER_ROLES, 'admin'] as const;
+export const ACCOUNT_ROLES = [...REGISTER_ROLES, 'admin', 'demo'] as const;
 export const ACCOUNT_STATUSES = ['pending', 'enabled', 'rejected', 'disabled'] as const;
 export const MANAGER_SUB_ROLES = ['approval_manager', 'clerk', 'system_admin'] as const;
 
@@ -14,7 +14,12 @@ export const ROLE_LABEL: Record<AccountRole, string> = {
   logistics: '物流',
   manager: '经理层',
   admin: '管理员',
+  demo: '试用账号',
 };
+
+export function isDemoRole(role: string | undefined | null): boolean {
+  return role === 'demo';
+}
 
 export const MANAGER_SUB_ROLE_LABEL: Record<ManagerSubRole, string> = {
   approval_manager: '审批经理',

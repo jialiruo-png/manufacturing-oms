@@ -367,6 +367,8 @@ export const usersApi = {
     managerSubRole?: ManagerSubRole;
     remark?: string;
   }) => api.post<{ message: string; user: User }>('/users/register', data).then((r) => r.data),
+  registerDemo: (data?: { name?: string }) =>
+    api.post<{ message: string; user: User; token: string }>('/users/register-demo', data ?? {}).then((r) => r.data),
   login: (data: { login: string; password: string }) =>
     api.post<{ user: User; token: string }>('/users/login', data).then((r) => r.data),
   requestPasswordReset: (data: { identifier: string }) =>

@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import type { AccountRole, DataChangeReason, NotificationItem, RefreshableTab, Role, User } from './types';
 import { clearApiCache, notificationsApi, usersApi } from './api';
-import { ACCOUNT_ROLE_LABEL, canApproveOrder, canCreateOrder, canManageUsers, displayRole } from './utils/permissions';
+import { ACCOUNT_ROLE_LABEL, canApproveOrder, canCreateOrder, canManageUsers, displayRole, isDemoUser } from './utils/permissions';
 import {
   ALL_REFRESHABLE_TABS,
   initialRefreshKeys,
@@ -65,7 +65,36 @@ const ADMIN_TABS: Role[] = ['dashboard', 'sales', 'procurement', 'production', '
 function toAppRole(role: AccountRole): Role {
   if (role === 'purchase') return 'procurement';
   if (role === 'manager' || role === 'admin') return 'gm';
+  if (role === 'demo') return 'dashboard';
   return role;
+}
+
+// Demo accounts: switch the "viewed role" client-side so the demo user can
+// experience every role's UI. Backend enforces read-only regardless of which
+// view is selected here.
+const DEMO_VIEW_ROLES: { value: AccountRole; label: string }[] = [
+  { value: 'sales',      label: '业务员视角' },
+  { value: 'purchase',   label: '采购视角' },
+  { value: 'production', label: '生产视角' },
+  { value: 'logistics',  label: '物流视角' },
+  { value: 'manager',    label: '经理层视角' },
+  { value: 'admin',      label: '管理员视角' },
+];
+
+function withDemoView(user: User, viewedRole: AccountRole): User {
+  if (user.role !== 'demo') return user;
+  const isAdminView = viewedRole === 'admin';
+  const isManagerView = viewedRole === 'manager';
+  return {
+    ...user,
+    role: viewedRole,
+    isAdmin: isAdminView,
+    canManageUsers: isAdminView,
+    canApproveOrder: isManagerView || isAdminView,
+    isClerk: isManagerView,
+    canCreateOrderForSales: viewedRole === 'sales' || isAdminView || isManagerView,
+    managerSubRole: isAdminView ? 'system_admin' : isManagerView ? 'approval_manager' : '',
+  };
 }
 
 function defaultTabForUser(user: User): ActiveTab {
@@ -137,6 +166,13 @@ function initialMountedTabs(): ActiveTab[] {
 
 export default function App() {
   const [loggedInUser, setLoggedInUser] = useState<User | null>(initialUser);
+  const [demoViewedRole, setDemoViewedRole] = useState<AccountRole>('sales');
+  // For demo accounts: synthesize a user object as if they were the viewed role.
+  // Used by every permission / tab check below. Backend still treats them as demo
+  // and rejects any non-GET request — view simulation is purely client-side.
+  const effectiveLoggedInUser: User | null = loggedInUser
+    ? (loggedInUser.role === 'demo' ? withDemoView(loggedInUser, demoViewedRole) : loggedInUser)
+    : null;
   const [activeTab, setActiveTab]       = useState<ActiveTab>(initialTab);
   const [mountedTabs, setMountedTabs]   = useState<ActiveTab[]>(initialMountedTabs);
   const [badges, setBadges]             = useState<Partial<Record<BadgeTab, number>>>({});
@@ -172,7 +208,7 @@ export default function App() {
           duration: 4,
           onClick: () => {
             const target = notificationTargetToTab(increased.target);
-            if (loggedInUser && canAccessTab(loggedInUser, target)) setActiveTab(target);
+            if (effectiveLoggedInUser && canAccessTab(effectiveLoggedInUser, target)) setActiveTab(target);
           },
         });
       }
@@ -223,13 +259,18 @@ export default function App() {
 
   const handleLogin = (auth: AuthState) => {
     const user = auth.user;
-    const defaultTab = defaultTabForUser(user);
-    const nextTab = canAccessTab(user, defaultTab) ? defaultTab : tabsForUser(user)[0];
+    // For demo accounts, start in 业务员 view; we'll synthesize the effective user
+    // from `demoViewedRole` for all downstream permission/tab checks.
+    const initialViewedRole: AccountRole = 'sales';
+    const probeUser = user.role === 'demo' ? withDemoView(user, initialViewedRole) : user;
+    const defaultTab = defaultTabForUser(probeUser);
+    const nextTab = canAccessTab(probeUser, defaultTab) ? defaultTab : tabsForUser(probeUser)[0];
     clearApiCache();
     saveAuthState(auth);
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, nextTab);
     window.location.hash = `#/${nextTab}`;
     setLoggedInUser(user);
+    if (user.role === 'demo') setDemoViewedRole(initialViewedRole);
     setActiveTab(nextTab);
     setMountedTabs(user.mustChangePassword ? [] : [nextTab]);
     setRefreshKeys(initialRefreshKeys());
@@ -315,13 +356,13 @@ export default function App() {
   }, [loggedInUser?.mustChangePassword]);
 
   useEffect(() => {
-    if (!loggedInUser || loggedInUser.mustChangePassword) {
+    if (!effectiveLoggedInUser || effectiveLoggedInUser.mustChangePassword) {
       setMountedTabs([]);
       return;
     }
-    if (!canAccessTab(loggedInUser, activeTab)) return;
+    if (!canAccessTab(effectiveLoggedInUser, activeTab)) return;
     setMountedTabs((prev) => prev.includes(activeTab) ? prev : [...prev, activeTab]);
-  }, [activeTab, loggedInUser?.id, loggedInUser?.mustChangePassword]);
+  }, [activeTab, loggedInUser?.id, loggedInUser?.mustChangePassword, demoViewedRole]);
 
   useEffect(() => {
     if (!loggedInUser || loggedInUser.mustChangePassword) return;
@@ -340,35 +381,38 @@ export default function App() {
     const handleHashChange = () => {
       const next = getPersistentHashTab();
       if (!next) return;
-      if (loggedInUser && !canAccessTab(loggedInUser, next)) return;
+      if (effectiveLoggedInUser && !canAccessTab(effectiveLoggedInUser, next)) return;
       setActiveTab(next);
       localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, next);
     };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [loggedInUser]);
+  }, [loggedInUser, demoViewedRole]);
 
   useEffect(() => {
-    if (!loggedInUser) return;
+    if (!effectiveLoggedInUser) return;
     if (activeTab === 'workbench') return;
-    const next = canAccessTab(loggedInUser, activeTab) ? activeTab : tabsForUser(loggedInUser)[0];
+    const next = canAccessTab(effectiveLoggedInUser, activeTab) ? activeTab : tabsForUser(effectiveLoggedInUser)[0];
     if (next !== activeTab) {
       setActiveTab(next);
       return;
     }
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
     if (window.location.hash !== `#/${activeTab}`) window.location.hash = `#/${activeTab}`;
-  }, [activeTab, loggedInUser]);
+  }, [activeTab, loggedInUser, demoViewedRole]);
 
-  if (!loggedInUser) return <LoginPage onLogin={handleLogin} />;
+  if (!loggedInUser || !effectiveLoggedInUser) return <LoginPage onLogin={handleLogin} />;
 
-  const loggedInRole = toAppRole(loggedInUser.role);
-  const visibleRoleTabs = tabsForUser(loggedInUser).filter((tab): tab is Role => tab !== 'user-review');
+  const demoMode = isDemoUser(loggedInUser);
+  const effectiveUser: User = effectiveLoggedInUser;
+  const loggedInRole = toAppRole(effectiveUser.role);
+  const visibleRoleTabs = tabsForUser(effectiveUser).filter((tab): tab is Role => tab !== 'user-review');
   const visibleTabs = ALL_TABS.filter((t) => visibleRoleTabs.includes(t.key));
-  const canReviewUsers = canManageUsers(loggedInUser);
+  const canReviewUsers = canManageUsers(effectiveUser);
   const salesReadOnly =
-    loggedInUser.role === 'purchase'
-    || ((canApproveOrder(loggedInUser) || canManageUsers(loggedInUser)) && !canCreateOrder(loggedInUser) && !loggedInUser.isAdmin);
+    demoMode
+    || effectiveUser.role === 'purchase'
+    || ((canApproveOrder(effectiveUser) || canManageUsers(effectiveUser)) && !canCreateOrder(effectiveUser) && !effectiveUser.isAdmin);
   const currentProfile: HeaderProfile = {
     name: loggedInUser.name,
     team: loggedInUser.department,
@@ -487,6 +531,35 @@ export default function App() {
       </Header>
 
       <Content style={contentStyle}>
+        {demoMode && (
+          <Alert
+            type="warning"
+            showIcon
+            banner
+            style={{ marginBottom: 12, borderRadius: 8 }}
+            message={
+              <Space size={12} wrap>
+                <span style={{ fontWeight: 700 }}>🎯 DEMO 体验模式 · 全站只读</span>
+                <span style={{ color: '#7b8494' }}>切换视角浏览不同岗位的界面：</span>
+                <Dropdown
+                  trigger={['click']}
+                  menu={{
+                    items: DEMO_VIEW_ROLES.map((opt) => ({
+                      key: opt.value,
+                      label: opt.label,
+                      onClick: () => setDemoViewedRole(opt.value),
+                    })),
+                  }}
+                >
+                  <Button size="small" type="primary" ghost>
+                    当前视角：{DEMO_VIEW_ROLES.find((opt) => opt.value === demoViewedRole)?.label ?? '业务员视角'} ▾
+                  </Button>
+                </Dropdown>
+                <span style={{ color: '#7b8494' }}>任何写入操作（提交 / 审批 / 删除）都会被服务端拒绝。</span>
+              </Space>
+            }
+          />
+        )}
         <FeatureBanner />
         {loggedInUser.mustChangePassword ? (
           <Alert
@@ -500,7 +573,7 @@ export default function App() {
             <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>
               {mountedTabs.includes('workbench') && (
                 <div style={{ display: activeTab === 'workbench' ? 'block' : 'none' }}>
-                  <Workbench refreshKey={refreshKeys.workbench} role={loggedInRole} user={loggedInUser} onNavigate={(target) => setActiveTab(target)} onProfileChange={() => setProfileVersion((v) => v + 1)} />
+                  <Workbench refreshKey={refreshKeys.workbench} role={loggedInRole} user={effectiveUser} onNavigate={(target) => setActiveTab(target)} onProfileChange={() => setProfileVersion((v) => v + 1)} />
                 </div>
               )}
               {mountedTabs.includes('dashboard') && (
@@ -510,7 +583,7 @@ export default function App() {
               )}
               {mountedTabs.includes('sales') && (
                 <div style={{ display: activeTab === 'sales' ? 'block' : 'none' }}>
-                  <SalesView refreshKey={refreshKeys.sales} onDataChanged={handleDataChanged} readOnly={salesReadOnly} role={loggedInUser.isAdmin ? 'admin' : loggedInRole} user={loggedInUser} />
+                  <SalesView refreshKey={refreshKeys.sales} onDataChanged={handleDataChanged} readOnly={salesReadOnly} role={effectiveUser.isAdmin ? 'admin' : loggedInRole} user={effectiveUser} />
                 </div>
               )}
               {mountedTabs.includes('gm') && (
@@ -535,7 +608,7 @@ export default function App() {
               )}
               {mountedTabs.includes('user-review') && canReviewUsers && (
                 <div style={{ display: activeTab === 'user-review' ? 'block' : 'none' }}>
-                  <UserReviewPage refreshKey={refreshKeys['user-review']} currentUser={loggedInUser} onDataChanged={handleDataChanged} />
+                  <UserReviewPage refreshKey={refreshKeys['user-review']} currentUser={effectiveUser} onDataChanged={handleDataChanged} />
                 </div>
               )}
             </Suspense>

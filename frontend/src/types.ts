@@ -227,7 +227,7 @@ export interface NotificationsResponse {
   generatedAt: string;
 }
 
-export type AccountRole = 'sales' | 'purchase' | 'production' | 'logistics' | 'manager' | 'admin';
+export type AccountRole = 'sales' | 'purchase' | 'production' | 'logistics' | 'manager' | 'admin' | 'demo';
 export type ManagerSubRole = 'approval_manager' | 'clerk' | 'system_admin' | '';
 export type UserStatus = 'pending' | 'enabled' | 'rejected' | 'disabled';
 

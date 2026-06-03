@@ -35,19 +35,32 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       return next(httpError(401, '登录状态已失效', 'UNAUTHORIZED'));
     }
 
+    const isDemoUser = user.role === 'demo';
+
+    // Demo accounts are read-only super-viewers: we grant view-side flags so they
+    // can see every role's pages, but we block every non-GET request below so they
+    // cannot mutate anything regardless of UI state.
     req.user = {
       userId: user.id,
       role: user.role,
-      managerSubRole: user.managerSubRole,
-      canApproveOrder: user.canApproveOrder,
-      canManageUsers: user.canManageUsers,
-      isClerk: user.isClerk,
-      canCreateOrderForSales: user.canCreateOrderForSales,
-      isAdmin: user.isAdmin,
+      managerSubRole: isDemoUser ? '' : user.managerSubRole,
+      canApproveOrder: isDemoUser ? true : user.canApproveOrder,
+      canManageUsers: isDemoUser ? true : user.canManageUsers,
+      isClerk: isDemoUser ? true : user.isClerk,
+      canCreateOrderForSales: isDemoUser ? true : user.canCreateOrderForSales,
+      isAdmin: isDemoUser ? true : user.isAdmin,
       name: user.name,
       tokenVersion: user.tokenVersion,
       mustChangePassword: user.mustChangePassword,
     };
+
+    if (isDemoUser) {
+      const method = req.method.toUpperCase();
+      if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+        return next(httpError(403, '试用账号为只读模式，无法执行写入操作', 'DEMO_READ_ONLY'));
+      }
+    }
+
     next();
   } catch {
     return next(httpError(401, '登录状态无效或已过期', 'UNAUTHORIZED'));

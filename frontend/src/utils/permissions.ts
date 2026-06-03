@@ -7,7 +7,12 @@ export const ACCOUNT_ROLE_LABEL: Record<AccountRole, string> = {
   logistics: '物流',
   manager: '经理层',
   admin: '管理员',
+  demo: '试用账号',
 };
+
+export function isDemoUser(user: Pick<User, 'role'> | null | undefined): boolean {
+  return !!user && user.role === 'demo';
+}
 
 export const MANAGER_SUB_ROLE_LABEL: Record<ManagerSubRole, string> = {
   '': '',
