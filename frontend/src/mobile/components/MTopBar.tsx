@@ -28,8 +28,8 @@ export default function MTopBar({ title, showBack, onBack, right, brand, tall }:
         </div>
         {brand ? (
           <div className="m-topbar-brand">
-            <span className="m-topbar-brand-red">YMT</span>
-            <span className="m-topbar-brand-dark"> DIESEL</span>
+            <span className="m-topbar-brand-red">HRM</span>
+            <span className="m-topbar-brand-dark"> MFG</span>
           </div>
         ) : (
           <div className="m-topbar-title">{title}</div>

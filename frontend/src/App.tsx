@@ -460,9 +460,9 @@ export default function App() {
     <Layout style={{ minHeight: '100vh', background: 'rgb(247, 247, 247)' }}>
       <Header className="app-top-nav">
         {/* Brand */}
-        <div className="app-brand" aria-label="YMT DIESEL">
-          <span className="app-brand-red">YMT</span>
-          <span className="app-brand-dark">DIESEL</span>
+        <div className="app-brand" aria-label="HRM MANUFACTURING">
+          <span className="app-brand-red">HRM</span>
+          <span className="app-brand-dark">MFG</span>
         </div>
 
         <div className="app-nav-divider" />

@@ -115,10 +115,10 @@ export default function MLogin({ onLogin }: MLoginProps) {
       <div className="m-login-wrap">
         <div className="m-login-brand">
           <div className="m-login-brand-title">
-            <span className="red">YMT</span>
-            <span className="dark"> DIESEL</span>
+            <span className="red">HRM</span>
+            <span className="dark"> MFG</span>
           </div>
-          <div className="m-login-brand-sub">YMT · 订单管理系统</div>
+          <div className="m-login-brand-sub">恒锐智造 · 订单管理系统</div>
         </div>
 
         <div className="m-login-card">

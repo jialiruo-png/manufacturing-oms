@@ -130,18 +130,17 @@ export default function LoginPage({ onLogin }: { onLogin: (auth: AuthState) => v
       background: 'linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%)',
     }}>
       <section style={{ width: 'min(560px, 100%)', textAlign: 'center' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 14, marginBottom: 58 }}>
-          <img src="/logo.jpg" alt="YMT" style={{ width: 80, height: 54, objectFit: 'contain' }} />
+        <div style={{ display: 'inline-flex', alignItems: 'center', marginBottom: 58 }}>
           <div style={{ fontSize: 36, lineHeight: 1, fontWeight: 900, color: '#101827' }}>
-            <span style={{ color: '#c4000b' }}>YMT</span> DIESEL
+            <span style={{ color: '#c4000b' }}>HRM</span> MANUFACTURING
           </div>
         </div>
 
         <h1 style={{ margin: 0, fontSize: 34, lineHeight: 1.25, fontWeight: 800, color: '#101827' }}>
-          {mode === 'login' ? 'YMT' : '新用户注册'}
+          {mode === 'login' ? '恒锐智造' : '新用户注册'}
         </h1>
         <p style={{ margin: '16px 0 42px', color: '#7b8494', fontSize: 22, lineHeight: 1.55, fontWeight: 600 }}>
-          {mode === 'login' ? '欢迎登陆 YMT 订单生产协同管理系统' : '提交后需等待管理员审核启用'}
+          {mode === 'login' ? '欢迎登陆恒锐AI订单协同管理系统' : '提交后需等待管理员审核启用'}
         </p>
 
         {notice && (

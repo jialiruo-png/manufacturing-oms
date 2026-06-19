@@ -200,7 +200,7 @@ export default function Workbench({
             <span className="wb-role-tag">{displayRole(user)}</span>
           </div>
           <div className="wb-user-meta">
-            <span>{user.department || 'YMT'}</span>
+            <span>{user.department || 'HRM'}</span>
             <span className="wb-user-meta-sep" />
             <span>{user.phone}</span>
           </div>
