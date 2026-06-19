@@ -11,7 +11,7 @@ function numberParts(date = new Date()) {
 
   return {
     period: `${year}-${month}`,
-    contractPrefix: `YMT${yy}${month}`,
+    contractPrefix: `HRM${yy}${month}`,
   };
 }
 

@@ -261,7 +261,7 @@ async function main() {
   // Order 1: shipped (completed)
   const order1 = await prisma.order.create({
     data: {
-      contractNo: 'YMT2603001',
+      contractNo: 'HRM2603001',
       customerId: customers[0].id,
       productId: products[4].id, // GEN5KD
       quantity: 10,
@@ -291,7 +291,7 @@ async function main() {
   // Order 2: in production
   const order2 = await prisma.order.create({
     data: {
-      contractNo: 'YMT2603002',
+      contractNo: 'HRM2603002',
       customerId: customers[0].id,
       productId: products[4].id, // GEN5KD
       quantity: 5,
@@ -320,7 +320,7 @@ async function main() {
   // Order 3: procurement (materials pending)
   const order3 = await prisma.order.create({
     data: {
-      contractNo: 'YMT2603003',
+      contractNo: 'HRM2603003',
       customerId: customers[1].id,
       productId: products[3].id, // GEN5KT
       quantity: 8,
@@ -349,7 +349,7 @@ async function main() {
   // Order 4: pending_approval
   await prisma.order.create({
     data: {
-      contractNo: 'YMT2604001',
+      contractNo: 'HRM2604001',
       customerId: customers[2].id,
       productId: products[2].id, // GEN3KS
       quantity: 20,
@@ -373,7 +373,7 @@ async function main() {
   // Order 5: draft
   await prisma.order.create({
     data: {
-      contractNo: 'YMT2604002',
+      contractNo: 'HRM2604002',
       customerId: customers[3].id,
       productId: products[5].id, // GEN65
       quantity: 5,
@@ -396,7 +396,7 @@ async function main() {
   // Order 6: ready_ship (overdue-ish)
   await prisma.order.create({
     data: {
-      contractNo: 'YMT2603004',
+      contractNo: 'HRM2603004',
       customerId: customers[1].id,
       productId: products[1].id, // GEN2K
       quantity: 30,

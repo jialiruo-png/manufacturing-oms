@@ -34,7 +34,7 @@ test('parses production plan rows and keeps split diesel pump items separate', (
 test('parses contract table row ids as source row numbers, not product names', () => {
   const sheet = sheetFromRows([
     ['柴油发电机组订单合同20260320'],
-    ['需方：示例外贸客户A 客户联系人A', '供方：YMT'],
+    ['需方：示例外贸客户A 客户联系人A', '供方：HRM'],
     ['交货时间：2026-03-30'],
     ['No.', 'Description of Goods', 'T.T QTY', 'Unit Price', 'Total Amount', 'CTNS', 'QTY/CTN', 'CTN/CBM', 'T.T CBM', 'CTN/KG', 'T.T KG'],
     ['', '', 'PCS', 'RMB', 'RMB', 'CTNS', 'PCS', 'CBM', 'CBM', 'KG', 'KG'],
@@ -119,4 +119,3 @@ test('parses continuation rows when product name is omitted but detail and quant
   assert.deepEqual(parsed.items.map((item) => item.productName), ['柴油水泵', '柴油水泵']);
   assert.deepEqual(parsed.items.map((item) => item.quantity), [10, 20]);
 });
-

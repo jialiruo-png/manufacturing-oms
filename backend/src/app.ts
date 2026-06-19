@@ -15,6 +15,7 @@ import usersRouter from './routes/users';
 import notificationsRouter from './routes/notifications';
 import { authenticate } from './middleware/authenticate';
 import { httpError } from './lib/httpError';
+import { anonymizeResponseBody } from './lib/nameAnonymizer';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -40,6 +41,7 @@ app.use(helmet({
 }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
+app.use(anonymizeResponseBody);
 
 app.use('/api/users', usersRouter);
 
